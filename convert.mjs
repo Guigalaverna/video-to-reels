@@ -1,40 +1,40 @@
 #!/usr/bin/env zx
 
-import { fold } from "./utils/fold-text.mjs";
-import { calculateCuts } from "./utils/calculate-cuts.mjs";
+import { fold } from './utils/fold-text.mjs';
+import { calculateCuts } from './utils/calculate-cuts.mjs';
 
-const videoFile = argv["i"] || argv["input"];
+const videoFile = argv['i'] || argv['input'];
 
 if (!videoFile) {
   console.log(`
-    ${chalk.bold("No input file specified")}
+    ${chalk.bold('No input file specified')}
 
-    ${chalk.bold("Usage:")}
-    ${chalk.bold("zx convert.mjs -i video.mp4 [options]")}
+    ${chalk.bold('Usage:')}
+    ${chalk.bold('zx convert.mjs -i video.mp4 [options]')}
   `);
 
   process.exit(0);
 }
 
-if (argv["h"] || argv["help"]) {
+if (argv['h'] || argv['help']) {
   console.log(`
-  ${chalk.bold("Video to Reels")}
+  ${chalk.bold('Video to Reels')}
 
-  ${chalk.bold("Usage:")}
+  ${chalk.bold('Usage:')}
   zx convert.mjs [options]
 
-  ${chalk.bold("Options:")}
+  ${chalk.bold('Options:')}
     -h | --help - Show help message
     -i | --input - Path of the video to be converted
 `);
 }
 
-const q = await question("Qual a pergunta? \n");
+const q = await question('Qual a pergunta? \n');
 
 export async function QFilter() {
   const listFilters = await $`ls ./assets/filters/`;
   const filter = await question(
-    "\nEscolha um dos filtros acima e digite o nome abaixo (sem a extensão .CUBE): \n"
+    '\nEscolha um dos filtros acima e digite o nome abaixo (sem a extensão .CUBE): \n'
   );
 
   return {
@@ -45,24 +45,26 @@ export async function QFilter() {
 
 const { filter } = await QFilter();
 
-const video = await question("\nDigite o nome do arquivo a ser salvo: \n");
+const video = await question('\nDigite o nome do arquivo a ser salvo: \n');
 
-const videoOutput = "videos/";
+const videoOutput = 'videos/';
 
 const textArray = fold(q, 30, true);
-const lineBreakedText = textArray.map(line => line.trim()).join("\n");
+const lineBreakedText = textArray.map(line => line.trim()).join('\n');
 
-await fs.writeFile("./tmp/text.txt", lineBreakedText);
+await fs.writeFile('./tmp/text.txt', lineBreakedText);
 
 const fontSizes = {
-  1: "48",
-  2: "48",
-  3: "48",
-  4: "42",
-  5: "36",
+  1: '48',
+  2: '48',
+  3: '48',
+  4: '42',
+  5: '36',
 };
 
 const fontSizeByAmountOfLines = fontSizes[Math.min(textArray.length, 5)];
+
+const questionText = await fs.readFile('tmp/text.txt', 'utf-8');
 
 await $`
 convert \
@@ -70,7 +72,7 @@ convert \
   -fill black \
   -pointsize ${fontSizeByAmountOfLines} \
   -gravity center \
-  -annotate +10+95 @tmp/text.txt \
+  -annotate +10+95 ${questionText} \
   assets/overlay.png \
   tmp/question.png`;
 
@@ -83,14 +85,14 @@ ffmpeg -y \
 
 await $`node detect-face/face-detection.js`;
 
-const faceResult = await fs.readJsonSync("./tmp/face.json");
+const faceResult = await fs.readJsonSync('./tmp/face.json');
 const cut = calculateCuts(faceResult);
 
 await $`
   ffmpeg -y \
     -i ${videoFile} \
     -i tmp/question.png \
-    -c:v h264_videotoolbox \
+    -c:v libx264 \
     -b:v 5000k \
     -filter_complex "
       transpose=1, \
